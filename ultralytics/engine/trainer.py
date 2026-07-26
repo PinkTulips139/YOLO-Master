@@ -695,6 +695,7 @@ class BaseTrainer:
                     self.optimizer.zero_grad()
                     break  # restart epoch loop with reduced batch size
                 if should_step:
+                    self._current_train_step = ni
                     self.optimizer_step()
                     last_opt_step = ni
 
@@ -959,10 +960,38 @@ class BaseTrainer:
     def optimizer_step(self):
         """Perform a single step of the training optimizer with gradient clipping and EMA update."""
         self.scaler.unscale_(self.optimizer)  # unscale gradients
-        local_nonfinite = any(
-            parameter.grad is not None and not bool(torch.isfinite(parameter.grad).all().item())
-            for parameter in self.model.parameters()
+        first_nonfinite = next(
+            (
+                (name, parameter)
+                for name, parameter in self.model.named_parameters()
+                if parameter.grad is not None and not bool(torch.isfinite(parameter.grad).all().item())
+            ),
+            None,
         )
+        local_nonfinite = first_nonfinite is not None
+        if local_nonfinite:
+            parameter_name, parameter = first_nonfinite
+            parameter_group = next(
+                (
+                    group.get("param_group", "unknown")
+                    for group in self.optimizer.param_groups
+                    if any(candidate is parameter for candidate in group["params"])
+                ),
+                "unknown",
+            )
+            self._record_nonfinite_diagnostic(
+                "gradient",
+                epoch=self.epoch + 1,
+                step=getattr(self, "_current_train_step", None),
+                loss_items=getattr(self, "loss_items", None),
+                parameter=f"{parameter_name} [group={parameter_group}]",
+            )
+            LOGGER.warning(
+                "Non-finite gradient detected at "
+                f"epoch={self.epoch + 1}, step={getattr(self, '_current_train_step', None)}, "
+                f"parameter={parameter_name}, group={parameter_group}, "
+                f"loss_items={getattr(self, 'loss_items', None)}"
+            )
         if self._sync_nonfinite_flag(local_nonfinite):
             self._gradient_nonfinite = True
             self.optimizer.zero_grad()
