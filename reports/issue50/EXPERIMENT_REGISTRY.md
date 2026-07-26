@@ -19,7 +19,7 @@
 
 ## 下一步
 
-使用官方预训练权重运行 Brain Tumor r=4 的三轮对照实验。
+云端先使用官方预训练权重运行 Brain Tumor `r=4` 作为单组验收；验收通过后再运行剩余五组正式实验。
 
 ## 正式实验计划
 
@@ -45,3 +45,11 @@
 - 每组实验独立启动，`resume=False`，`exist_ok=False`。
 - 训练产物写入 `runs/issue50/formal/`，日志写入 `runs/issue50/formal/logs/`。
 - `runs/`、`weights/` 和权重文件不进入 Git 提交。
+
+## 实验基础设施状态
+
+- 正式脚本已固定六组实验矩阵、官方预训练权重、`resume=False`、`exist_ok=False`、确定性评估与结果保存开关。
+- 脚本使用 `pathlib` 从脚本位置动态定位仓库、权重、输出和日志目录，避免依赖 Windows 或 Linux 的写死绝对路径。
+- 每组正式运行将在日志目录写入 `run_manifest.json`，记录 Git 分支/commit/脏工作区状态、完整命令、运行环境、开始结束时间和退出状态；dry-run 仅打印预览，不生成 manifest。
+- 汇总脚本可在 manifest 存在时读取其 Git 与运行环境信息；旧实验缺少 manifest 时仍保持兼容。
+- 当前没有新增正式训练结果；表中的六组状态仍为 `planned`。

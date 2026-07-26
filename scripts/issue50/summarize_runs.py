@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import math
 import re
 from pathlib import Path
@@ -50,6 +51,19 @@ FIELDNAMES = [
     "gradient_checkpointing_actual",
     "effective_lora_backend",
     "log_path",
+    "manifest_path",
+    "branch",
+    "git_commit",
+    "git_dirty",
+    "manifest_started_at",
+    "manifest_finished_at",
+    "exit_code",
+    "success",
+    "python_version",
+    "pytorch_version",
+    "cuda_version",
+    "gpu_name",
+    "operating_system",
 ]
 
 
@@ -101,6 +115,24 @@ def read_log(path: Path) -> str:
     if not path.exists():
         return ""
     return path.read_text(encoding="utf-8", errors="replace")
+
+
+def read_manifest(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        with path.open(encoding="utf-8", errors="replace") as handle:
+            data = json.load(handle)
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def manifest_value(manifest: dict[str, Any], key: str) -> str:
+    value = manifest.get(key, "")
+    if isinstance(value, bool):
+        return str(value).lower()
+    return str(value) if value is not None else ""
 
 
 def parse_param_stats(log_text: str) -> dict[str, str]:
@@ -191,7 +223,16 @@ def parse_gradient_checkpointing(args: dict[str, Any], log_text: str) -> tuple[s
     return requested, "unknown"
 
 
-def infer_status(run_dir: Path, results_rows: list[dict[str, str]], log_text: str) -> str:
+def infer_status(
+    run_dir: Path,
+    results_rows: list[dict[str, str]],
+    log_text: str,
+    manifest: dict[str, Any],
+) -> str:
+    if manifest.get("finished_at"):
+        return "completed" if manifest.get("success") is True else "failed"
+    if manifest.get("started_at"):
+        return "started_no_completion_record"
     if not run_dir.exists():
         return "missing"
     if re.search(r"epochs completed", log_text, flags=re.IGNORECASE):
@@ -205,9 +246,11 @@ def summarize_one(project: Path, log_dir: Path, scene: str, rank: int) -> dict[s
     run_name = f"{scene}_r{rank}_seed0"
     run_dir = project / run_name
     log_path = log_dir / f"{run_name}.log"
+    manifest_file = log_dir / run_name / "run_manifest.json"
     args = read_yaml(run_dir / "args.yaml")
     results_rows = read_results(run_dir / "results.csv")
     log_text = read_log(log_path)
+    manifest = read_manifest(manifest_file)
 
     metrics = best_metrics(results_rows)
     params = parse_param_stats(log_text)
@@ -220,7 +263,7 @@ def summarize_one(project: Path, log_dir: Path, scene: str, rank: int) -> dict[s
         "alpha": str(rank * 2),
         "run_name": run_name,
         "run_dir": str(run_dir),
-        "status": infer_status(run_dir, results_rows, log_text),
+        "status": infer_status(run_dir, results_rows, log_text, manifest),
         "mAP50": metrics.get("mAP50", ""),
         "mAP50_95": metrics.get("mAP50_95", ""),
         "precision": metrics.get("precision", ""),
@@ -238,6 +281,19 @@ def summarize_one(project: Path, log_dir: Path, scene: str, rank: int) -> dict[s
         "gradient_checkpointing_actual": gc_actual,
         "effective_lora_backend": str(args.get("effective_lora_backend", "")),
         "log_path": str(log_path),
+        "manifest_path": str(manifest_file) if manifest else "",
+        "branch": manifest_value(manifest, "branch"),
+        "git_commit": manifest_value(manifest, "git_commit"),
+        "git_dirty": manifest_value(manifest, "git_dirty"),
+        "manifest_started_at": manifest_value(manifest, "started_at"),
+        "manifest_finished_at": manifest_value(manifest, "finished_at"),
+        "exit_code": manifest_value(manifest, "exit_code"),
+        "success": manifest_value(manifest, "success"),
+        "python_version": manifest_value(manifest, "python_version"),
+        "pytorch_version": manifest_value(manifest, "pytorch_version"),
+        "cuda_version": manifest_value(manifest, "cuda_version"),
+        "gpu_name": manifest_value(manifest, "gpu_name"),
+        "operating_system": manifest_value(manifest, "operating_system"),
     }
 
 

@@ -11,7 +11,9 @@ This script is intentionally conservative:
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import platform
 import shlex
 import subprocess
 import sys
@@ -64,6 +66,106 @@ def repo_root() -> Path:
 
 def command_to_text(cmd: list[str]) -> str:
     return subprocess.list2cmdline(cmd) if os.name == "nt" else shlex.join(cmd)
+
+
+def git_output(root: Path, *args: str) -> str:
+    completed = subprocess.run(
+        ["git", *args],
+        cwd=root,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return completed.stdout.strip() if completed.returncode == 0 else ""
+
+
+def collect_git_metadata(root: Path) -> dict[str, str | bool]:
+    status_short = git_output(root, "status", "--short")
+    return {
+        "branch": git_output(root, "branch", "--show-current") or "unknown",
+        "git_commit": git_output(root, "rev-parse", "HEAD") or "unknown",
+        "git_dirty": bool(status_short),
+    }
+
+
+def collect_runtime_metadata() -> dict[str, str]:
+    metadata = {
+        "python_version": sys.version.replace("\n", " "),
+        "pytorch_version": "unavailable",
+        "cuda_version": "unavailable",
+        "gpu_name": "unavailable",
+        "operating_system": platform.platform(),
+    }
+    try:
+        import torch
+
+        metadata["pytorch_version"] = torch.__version__
+        metadata["cuda_version"] = torch.version.cuda or "none"
+        if torch.cuda.is_available():
+            metadata["gpu_name"] = torch.cuda.get_device_name(0)
+        else:
+            metadata["gpu_name"] = "cuda_unavailable"
+    except Exception as exc:  # pragma: no cover - environment-dependent metadata
+        metadata["gpu_name"] = f"unavailable: {type(exc).__name__}"
+    return metadata
+
+
+def dry_run_runtime_metadata() -> dict[str, str]:
+    return {
+        "python_version": sys.version.replace("\n", " "),
+        "pytorch_version": "deferred_until_training",
+        "cuda_version": "deferred_until_training",
+        "gpu_name": "deferred_until_training",
+        "operating_system": platform.platform(),
+    }
+
+
+def now_iso() -> str:
+    return datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def manifest_path(logs_root: Path, run_name: str) -> Path:
+    return logs_root / run_name / "run_manifest.json"
+
+
+def build_manifest(
+    *,
+    run_name: str,
+    scene: str,
+    rank: int,
+    cmd: list[str],
+    root: Path,
+    weights_path: Path,
+    formal_root: Path,
+    log_path: Path,
+    git_metadata: dict[str, str | bool],
+    runtime_metadata: dict[str, str],
+) -> dict[str, object]:
+    return {
+        "run_name": run_name,
+        "scene": scene,
+        "rank": rank,
+        "alpha": rank * 2,
+        **git_metadata,
+        "training_command": command_to_text(cmd),
+        "repo_root": str(root),
+        "weights_path": str(weights_path),
+        **runtime_metadata,
+        "started_at": now_iso(),
+        "result_dir": str(formal_root / run_name),
+        "log_path": str(log_path),
+    }
+
+
+def write_manifest(path: Path, manifest: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 def selected_scenes(scene: str) -> Iterable[tuple[str, SceneSpec]]:
@@ -131,6 +233,8 @@ def ensure_ready(
 ) -> None:
     if not weights_path.exists():
         raise SystemExit(f"Required pretrained weights not found: {weights_path}")
+    if weights_path.stat().st_size <= 0:
+        raise SystemExit(f"Required pretrained weights file is empty: {weights_path}")
 
     missing_cfgs = [path for path in cfg_paths if not path.exists()]
     if missing_cfgs:
@@ -212,7 +316,7 @@ def main() -> None:
     weights_path = (root / "weights" / "YOLO-Master-EsMoE-N.pt").resolve()
     cfg_paths = {scene: (root / spec.cfg).resolve() for scene, spec in SCENES.items()}
     ranks = validate_rank_values(args.ranks)
-    commands: list[tuple[list[str], str, Path]] = []
+    commands: list[tuple[str, int, list[str], str, Path]] = []
 
     for scene, spec in selected_scenes(args.scene):
         for rank in ranks:
@@ -227,14 +331,14 @@ def main() -> None:
                 device=args.device,
             )
             log_path = logs_root / f"{run_name}.log"
-            commands.append((cmd, run_name, log_path))
+            commands.append((scene, rank, cmd, run_name, log_path))
 
     ensure_ready(
         weights_path=weights_path,
         cfg_paths=cfg_paths.values(),
         formal_root=formal_root,
         logs_root=logs_root,
-        run_names=(name for _, name, _ in commands),
+        run_names=(name for _, _, _, name, _ in commands),
         allow_existing=args.allow_existing,
     )
 
@@ -248,14 +352,57 @@ def main() -> None:
     if invoked_from != root:
         print("working_directory_check: commands use training_cwd, so the invocation directory does not affect paths.")
 
-    for index, (cmd, run_name, log_path) in enumerate(commands, start=1):
+    if not args.dry_run and collect_git_metadata(root)["git_dirty"]:
+        raise SystemExit(
+            "Refusing to start a formal run from a dirty Git working tree. "
+            "Commit the intended scripts and reports first so results bind to one commit."
+        )
+
+    for index, (scene, rank, cmd, run_name, log_path) in enumerate(commands, start=1):
+        runtime_metadata = dry_run_runtime_metadata() if args.dry_run else collect_runtime_metadata()
+        manifest = build_manifest(
+            run_name=run_name,
+            scene=scene,
+            rank=rank,
+            cmd=cmd,
+            root=root,
+            weights_path=weights_path,
+            formal_root=formal_root,
+            log_path=log_path,
+            git_metadata=collect_git_metadata(root),
+            runtime_metadata=runtime_metadata,
+        )
+        current_manifest_path = manifest_path(logs_root, run_name)
         print(f"[{index}/{len(commands)}] {run_name}")
         print(command_to_text(cmd))
         print(f"log: {log_path}")
         if args.dry_run:
+            print(f"manifest_preview ({current_manifest_path}):")
+            print(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True))
             continue
 
-        return_code = run_with_log(cmd, root=root, log_path=log_path)
+        write_manifest(current_manifest_path, manifest)
+        try:
+            return_code = run_with_log(cmd, root=root, log_path=log_path)
+        except BaseException:
+            manifest.update(
+                {
+                    "finished_at": now_iso(),
+                    "exit_code": None,
+                    "success": False,
+                }
+            )
+            write_manifest(current_manifest_path, manifest)
+            raise
+
+        manifest.update(
+            {
+                "finished_at": now_iso(),
+                "exit_code": return_code,
+                "success": return_code == 0,
+            }
+        )
+        write_manifest(current_manifest_path, manifest)
         if return_code != 0:
             raise SystemExit(return_code)
 
