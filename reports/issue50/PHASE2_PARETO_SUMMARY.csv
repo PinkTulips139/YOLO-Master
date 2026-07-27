@@ -1,19 +1,15 @@
-dataset,method,run_name,mAP50_95,trainable_params,peak_gpu_mem_gib,train_time_s,recommendation,reason
-Brain Tumor,Diagnostic,brain_tumor_r4_stable_v1_seed0,0.06395,409174,7.46,325.142,not_recommended,dominated or does not lead the registered objective
-Brain Tumor,Full fine-tuning,brain_tumor_full_finetune_seed0,0.37121,0,9.44,537.624,not_recommended,dominated or does not lead the registered objective
-Brain Tumor,Head-only,brain_tumor_head_only_seed0,0.36997,0,6.21,306.462,not_recommended,dominated or does not lead the registered objective
-Brain Tumor,Last stage + Neck + Head,phase2_brain_tumor_last_stage_neck_head_seed0,0.40021,0,6.51,385.617,best_absolute+best_parameter_efficiency+best_numerical_stability,selected by registered objective
-Brain Tumor,Neck + Head,phase2_brain_tumor_neck_head_seed0,0.3477,0,6.47,278.315,not_recommended,dominated or does not lead the registered objective
-Brain Tumor,Neck + Head + LoRA,phase2_brain_tumor_partial_lora_seed0,0.35319,409174,7.47,486.725,not_recommended,dominated or does not lead the registered objective
-VisDrone,Diagnostic,visdrone_r4_stable_v2_seed0,0.02878,410734,23.0,1502.15,not_recommended,dominated or does not lead the registered objective
-VisDrone,Full fine-tuning,phase2_visdrone_full_finetune_seed0_b4,0.15527,0,23.0,1912.46,best_absolute+best_parameter_efficiency+best_numerical_stability,selected by registered objective
-VisDrone,Full fine-tuning,phase2_visdrone_full_finetune_seed0_b8,0.15104,0,22.7,1997.55,not_recommended,dominated or does not lead the registered objective
-VisDrone,Last stage + Neck + Head,phase2_visdrone_last_stage_neck_head_seed0_b4,0.14988,0,22.5,1745.97,not_recommended,dominated or does not lead the registered objective
-VisDrone,Neck + Head,phase2_visdrone_neck_head_seed0_b4,0.14359,0,22.5,1705.06,not_recommended,dominated or does not lead the registered objective
-VisDrone,Neck + Head + LoRA,phase2_visdrone_partial_lora_seed0_b8,0.08565,410734,23.0,2776.67,not_recommended,dominated or does not lead the registered objective
-Brain Tumor,AMP-safe LoRA,phase2_brain_tumor_amp_safe_lora_seed0,0.0,409174,0.0,0.0,not_recommended,failed stability/artifact/exit-code gate
-Brain Tumor,Original AMP LoRA,brain_tumor_r4_amp_probe_e1,0.02424,409174,5.93,31.4778,not_recommended,failed stability/artifact/exit-code gate
-VisDrone,AMP-safe LoRA,phase2_visdrone_amp_safe_lora_seed0_b8,0.0,410734,0.0,0.0,not_recommended,failed stability/artifact/exit-code gate
-VisDrone,Head-only,visdrone_head_only_seed0,0.04994,2664106,23.0,407.396,not_recommended,failed stability/artifact/exit-code gate
-VisDrone,Last stage + Neck + Head,phase2_visdrone_last_stage_neck_head_seed0_b8,0.0638,2664106,23.0,423.683,not_recommended,failed stability/artifact/exit-code gate
-VisDrone,Neck + Head,phase2_visdrone_neck_head_seed0_b8,0.06536,2664106,23.0,196.172,not_recommended,failed stability/artifact/exit-code gate
+dataset,method,run_name,seed,mAP50_95,trainable_params,peak_gpu_mem_gib,train_time_s,designation
+Brain Tumor,Last stage + Neck + Head,phase2_brain_tumor_last_stage_neck_head_seed0,0,0.40021,2114633,6.51,385.617,pareto_front
+Brain Tumor,Last stage + Neck + Head,phase2_brain_tumor_last_stage_neck_head_seed1,1,0.36552,2114633,6.51,475.534,dominated
+Brain Tumor,Last stage + Neck + Head,phase2_brain_tumor_last_stage_neck_head_seed2,2,0.40944,2114633,6.52,453.146,absolute_best+pareto_front
+Brain Tumor,Neck + Head,phase2_brain_tumor_neck_head_seed0,0,0.3477,901574,6.47,278.315,pareto_front
+Brain Tumor,Partial fine-tuning + LoRA,phase2_brain_tumor_partial_lora_seed0,0,0.35319,965574,7.47,486.725,dominated
+Brain Tumor,Head-only,brain_tumor_head_only_seed0,0,0.36997,347718,6.21,306.462,parameter_efficient+pareto_front
+Brain Tumor,Full fine-tuning,brain_tumor_full_finetune_seed0,0,0.37121,2662546,9.44,537.624,dominated
+Brain Tumor,Stable LoRA,brain_tumor_r4_stable_v1_seed0,0,0.06395,409174,7.46,325.142,dominated
+Brain Tumor,Stable LoRA,brain_tumor_r4_stable_v1_seed1,1,0.05086,409174,7.46,263.41,pareto_front
+VisDrone,Full fine-tuning,phase2_visdrone_full_finetune_seed0_b4,0,0.15527,2664106,23.0,1912.46,absolute_best+pareto_front
+VisDrone,Full fine-tuning,phase2_visdrone_full_finetune_seed1_b4,1,0.15401,2664106,23.0,1886.18,pareto_front
+VisDrone,Full fine-tuning,phase2_visdrone_full_finetune_seed2_b4,2,0.15097,2664106,23.0,1892.95,dominated
+VisDrone,Last stage + Neck + Head,phase2_visdrone_last_stage_neck_head_seed0_b4,0,0.14988,2116193,22.5,1745.97,pareto_front
+VisDrone,Neck + Head,phase2_visdrone_neck_head_seed0_b4,0,0.14359,903134,22.5,1705.06,parameter_efficient+pareto_front

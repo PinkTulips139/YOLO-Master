@@ -94,37 +94,37 @@ INITIAL_METHODS = (
     "amp_safe_lora",
 )
 EXISTING = {
-    ("brain_tumor", "head_only", 0): (
+    ("brain_tumor", "head_only", 0, None): (
         "runs/issue50/formal/baselines/brain_tumor_head_only_seed0",
         "runs/issue50/formal/logs/baselines/brain_tumor_head_only_seed0.log",
         "runs/issue50/formal/logs/baselines/brain_tumor_head_only_seed0/run_manifest.json",
     ),
-    ("brain_tumor", "full_finetune", 0): (
+    ("brain_tumor", "full_finetune", 0, None): (
         "runs/issue50/formal/baselines/brain_tumor_full_finetune_seed0",
         "runs/issue50/formal/logs/baselines/brain_tumor_full_finetune_seed0.log",
         "runs/issue50/formal/logs/baselines/brain_tumor_full_finetune_seed0/run_manifest.json",
     ),
-    ("brain_tumor", "stable_lora", 0): (
+    ("brain_tumor", "stable_lora", 0, None): (
         "runs/issue50/formal/brain_tumor_r4_stable_v1_seed0",
         "runs/issue50/formal/logs/brain_tumor_r4_stable_v1_seed0.log",
         "runs/issue50/formal/logs/brain_tumor_r4_stable_v1_seed0/run_manifest.json",
     ),
-    ("brain_tumor", "stable_lora", 1): (
+    ("brain_tumor", "stable_lora", 1, None): (
         "runs/issue50/formal/brain_tumor_r4_stable_v1_seed1",
         "runs/issue50/formal/logs/brain_tumor_r4_stable_v1_seed1.log",
         "runs/issue50/formal/logs/brain_tumor_r4_stable_v1_seed1/run_manifest.json",
     ),
-    ("visdrone", "stable_lora", 0): (
+    ("visdrone", "stable_lora", 0, None): (
         "runs/issue50/formal/visdrone_r4_stable_v2_seed0",
         "runs/issue50/formal/logs/visdrone_r4_stable_v2_seed0.log",
         "runs/issue50/formal/logs/visdrone_r4_stable_v2_seed0/run_manifest.json",
     ),
-    ("visdrone", "stable_lora", 1): (
+    ("visdrone", "stable_lora", 1, None): (
         "runs/issue50/formal/visdrone_r4_stable_v2_seed1",
         "runs/issue50/formal/logs/visdrone_r4_stable_v2_seed1.log",
         "runs/issue50/formal/logs/visdrone_r4_stable_v2_seed1/run_manifest.json",
     ),
-    ("visdrone", "head_only", 0): (
+    ("visdrone", "head_only", 0, 8): (
         "runs/issue50/formal/baselines/visdrone_head_only_seed0",
         "runs/issue50/formal/logs/baselines/visdrone_head_only_seed0.log",
         "runs/issue50/formal/logs/baselines/visdrone_head_only_seed0/run_manifest.json",
@@ -159,7 +159,8 @@ def finite(value: object) -> float:
 
 
 def run_paths(root: Path, job: Job) -> tuple[Path, Path, Path]:
-    existing = EXISTING.get((job.scene, job.method, job.seed))
+    batch_key = job.batch if job.scene == "visdrone" and job.method != "stable_lora" else None
+    existing = EXISTING.get((job.scene, job.method, job.seed, batch_key))
     if existing:
         return tuple(root / item for item in existing)
     project = root / "runs/issue50/phase2"
@@ -180,7 +181,7 @@ def inspect(root: Path, job: Job) -> dict:
     best = max(rows, key=lambda row: finite(row.get("metrics/mAP50-95(B)"))) if rows else {}
     speed = SPEED_RE.findall(log)
     params = PARAM_RE.findall(log)
-    gradients = GRADIENT_RE.findall(log)
+    gradients = [int(value.replace(",", "")) for value in GRADIENT_RE.findall(log)]
     memories = [finite(value) for value in GPU_RE.findall(log)]
     return {
         "passed": complete and success and not nonfinite and bool(rows),
@@ -196,9 +197,7 @@ def inspect(root: Path, job: Job) -> dict:
         "trainable_params": (
             int(params[-1].replace(",", ""))
             if params
-            else int(gradients[-1].replace(",", ""))
-            if gradients
-            else KNOWN_PARAMS.get((job.scene, job.method), 0)
+            else max((value for value in gradients if value > 0), default=KNOWN_PARAMS.get((job.scene, job.method), 0))
         ),
         "peak_gpu_mem_gib": max(memories, default=0.0),
         "inference_ms_per_image": finite(speed[-1]) if speed else 0.0,
@@ -335,7 +334,8 @@ def select_seed_jobs(root: Path, rows_by_key: dict[tuple[str, str, int], dict]) 
 def execute(root: Path, job: Job, launcher: str, device: str) -> dict:
     run, log_path, manifest_file = run_paths(root, job)
     existing = inspect(root, job)
-    if existing["passed"] or EXISTING.get((job.scene, job.method, job.seed)):
+    batch_key = job.batch if job.scene == "visdrone" and job.method != "stable_lora" else None
+    if existing["passed"] or EXISTING.get((job.scene, job.method, job.seed, batch_key)):
         return existing
     if run.exists():
         return existing
