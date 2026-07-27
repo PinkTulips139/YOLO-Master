@@ -47,7 +47,7 @@
 | `visdrone_r4_stable_v2_seed0` | Adapter LR 倍率 `0.5→0.1` 的严格 30 epoch 单变量正式验证 | 17/30 | 0.05444 | 0.02878 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 2；P=0.09139，R=0.09525，1502.2s，峰值 23.0GiB；较 V1 mAP50 +40.1% |
 | `visdrone_r8_stable_v2_seed0` | 唯一变量 rank `4→8`，alpha=16 | 17/30 | 0.05286 | 0.02811 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 2；P=0.09106，R=0.09204，1563.7s，峰值 23.0GiB |
 | `visdrone_r16_stable_v2_seed0` | 唯一变量 rank `8→16`，alpha=32 | 17/30 | 0.05361 | 0.02862 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 2；P=0.09090，R=0.09340，1755.5s，峰值 23.0GiB |
-| `brain_tumor_r4_stable_v1_seed1` | Brain Tumor 最佳 rank 的 seed=1 复验 | 40 | pending | pending | queued | 与 r=4 seed=0 仅 seed 不同 |
+| `brain_tumor_r4_stable_v1_seed1` | Brain Tumor 最佳 rank 的 seed=1 复验 | 19/40 | 0.08852 | 0.04652 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 3；P=0.21622，R=0.09419，263.4s；较 seed=0 mAP50 低 22.5%，显示随机种子敏感性 |
 | `visdrone_r4_stable_v2_seed1` | VisDrone 最佳 rank 的 seed=1 复验 | 30 | pending | pending | queued | 与 r=4 seed=0 仅 seed 不同 |
 
 ### 已定位的参数组
