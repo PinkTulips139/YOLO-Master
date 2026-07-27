@@ -161,6 +161,12 @@ def wait_for_queue(root: Path, status_path: Path, final_status: Path) -> dict:
             final_status,
             {
                 "status": "waiting",
+                "current_stage": "waiting_for_queue",
+                "current_experiment": state.get("current"),
+                "last_updated": now(),
+                "completed_count": len(state.get("completed", [])),
+                "failed_count": len(state.get("failed", [])),
+                "error_summary": "",
                 "updated_at": now(),
                 "queue_status": state.get("status", "missing"),
                 "queue_pids": queue_pids,
@@ -178,6 +184,12 @@ def wait_for_queue(root: Path, status_path: Path, final_status: Path) -> dict:
                     final_status,
                     {
                         "status": "blocked",
+                        "current_stage": "blocked",
+                        "current_experiment": state.get("current"),
+                        "last_updated": now(),
+                        "completed_count": len(state.get("completed", [])),
+                        "failed_count": len(state.get("failed", [])),
+                        "error_summary": "Queue disappeared and was not safely recoverable.",
                         "updated_at": now(),
                         "reason": "Queue disappeared; failure is not a narrowly recoverable launcher/network error.",
                         "queue_state": state,
@@ -612,6 +624,37 @@ def create_archive(root: Path, reports: Path) -> tuple[Path, str]:
     return archive, digest
 
 
+def completion_gate(reports: Path, archive: Path, digest: str) -> list[str]:
+    """Return fatal completion errors; an empty list permits the complete flag."""
+    errors = []
+    csv_paths = (
+        reports / "PHASE2_FINAL_RESULTS.csv",
+        reports / "PHASE2_SEED_SUMMARY.csv",
+        reports / "PHASE2_PARETO_SUMMARY.csv",
+    )
+    for path in csv_paths:
+        try:
+            with path.open(newline="", encoding="utf-8") as handle:
+                list(csv.DictReader(handle))
+        except (OSError, csv.Error) as exc:
+            errors.append(f"Unreadable CSV {path.name}: {exc}")
+    required = (
+        reports / "PHASE2_FINAL_REPORT_CN.md",
+        reports / "PHASE2_FINAL_HANDOFF.md",
+        reports / "PHASE2_FINAL_FIGURES",
+        archive,
+        archive.with_suffix(archive.suffix + ".sha256"),
+    )
+    for path in required:
+        if not path.exists():
+            errors.append(f"Missing required artifact: {path}")
+    if not digest or len(digest) != 64:
+        errors.append("Invalid SHA256 digest.")
+    if not list((reports / "PHASE2_FINAL_FIGURES").glob("*.png")):
+        errors.append("No final figures were generated.")
+    return errors
+
+
 def finalize(root: Path, final_status: Path) -> None:
     reports = root / "reports/issue50"
     rows = [summarize_run(*item) for item in discover_runs(root)]
@@ -648,12 +691,35 @@ def finalize(root: Path, final_status: Path) -> None:
     write_handoff(reports / "PHASE2_FINAL_HANDOFF.md", root, rows, pareto)
     commit, push_status = validate_and_commit(root, reports)
     archive, digest = create_archive(root, reports)
+    fatal_errors = completion_gate(reports, archive, digest)
+    if fatal_errors:
+        atomic_json(
+            final_status,
+            {
+                "status": "blocked",
+                "current_stage": "integrity_gate",
+                "current_experiment": None,
+                "last_updated": now(),
+                "completed_count": sum(row["classification"] == "formal" for row in rows),
+                "failed_count": sum(row["classification"] == "failure" for row in rows),
+                "error_summary": "; ".join(fatal_errors),
+                "archive": str(archive),
+                "sha256": digest,
+            },
+        )
+        raise SystemExit(3)
     complete_flag = root / "runs/issue50/PHASE2_COMPLETE.flag"
     atomic_text(complete_flag, f"completed_at={now()}\ncommit={commit}\narchive={archive}\nsha256={digest}\n")
     atomic_json(
         final_status,
         {
             "status": "completed",
+            "current_stage": "completed",
+            "current_experiment": None,
+            "last_updated": now(),
+            "completed_count": sum(row["classification"] == "formal" for row in rows),
+            "failed_count": sum(row["classification"] == "failure" for row in rows),
+            "error_summary": "",
             "completed_at": now(),
             "runs_audited": len(rows),
             "formal_successes": sum(row["classification"] == "formal" for row in rows),
@@ -691,7 +757,20 @@ def main() -> None:
         )
         return
     wait_for_queue(root, root / "runs/issue50/phase2_queue_status.json", final_status)
-    atomic_json(final_status, {"status": "finalizing", "updated_at": now()})
+    queue_state = read_state(root / "runs/issue50/phase2_queue_status.json")
+    atomic_json(
+        final_status,
+        {
+            "status": "finalizing",
+            "current_stage": "finalizing",
+            "current_experiment": None,
+            "last_updated": now(),
+            "completed_count": len(queue_state.get("completed", [])),
+            "failed_count": len(queue_state.get("failed", [])),
+            "error_summary": "",
+            "updated_at": now(),
+        },
+    )
     finalize(root, final_status)
 
 
