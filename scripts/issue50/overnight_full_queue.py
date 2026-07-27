@@ -74,8 +74,8 @@ def metrics(csv_path: Path) -> dict:
     }
 
 
-def inspect_formal(repo: Path, scene: str, rank: int) -> dict:
-    name = f"{scene}_r{rank}_stable_v1_seed0"
+def inspect_formal(repo: Path, scene: str, rank: int, version: str = "stable_v1") -> dict:
+    name = f"{scene}_r{rank}_{version}_seed0"
     run = repo / "runs" / "issue50" / "formal" / name
     logs = repo / "runs" / "issue50" / "formal" / "logs"
     log_path = logs / f"{name}.log"
@@ -240,9 +240,9 @@ def main() -> None:
                         "brain_tumor_r8_stable_v1_seed0",
                         "brain_tumor_r16_stable_v1_seed0",
                         "visdrone_r4_preflight_e1",
-                        "visdrone_r4_stable_v1_seed0",
-                        "visdrone_r8_stable_v1_seed0",
-                        "visdrone_r16_stable_v1_seed0",
+                        "visdrone_r4_stable_v2_seed0",
+                        "visdrone_r8_stable_v2_seed0",
+                        "visdrone_r16_stable_v2_seed0",
                     ],
                     "handoff_queue_pid": args.handoff_queue_pid,
                     "handoff_training_pid": args.handoff_training_pid,
@@ -362,12 +362,12 @@ def main() -> None:
             raise SystemExit("VisDrone smoke gate failed.")
 
         for rank in (4, 8, 16):
-            result = inspect_formal(repo, "visdrone", rank)
+            result = inspect_formal(repo, "visdrone", rank, "stable_v2")
             if result["passed"]:
                 state["completed"].append(result)
                 atomic_json(state_path, state)
                 continue
-            name = f"visdrone_r{rank}_stable_v1_seed0"
+            name = f"visdrone_r{rank}_stable_v2_seed0"
             result_dir = runs / "formal" / name
             log_path = runs / "formal" / "logs" / f"{name}.log"
             if result_dir.exists() or log_path.exists():
@@ -390,7 +390,7 @@ def main() -> None:
             return_code = launch(
                 command, repo, runs / "formal" / "logs" / f"{name}.queue.log", state, state_path
             )
-            result = inspect_formal(repo, "visdrone", rank)
+            result = inspect_formal(repo, "visdrone", rank, "stable_v2")
             result["queue_exit_code"] = return_code
             state["completed"].append(result)
             atomic_json(state_path, state)
