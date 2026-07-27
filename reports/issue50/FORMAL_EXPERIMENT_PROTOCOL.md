@@ -2,7 +2,7 @@
 
 ## 目标与范围
 
-本协议用于复现 Tencent/YOLO-Master Issue #50 的 LoRA 高效微调 rank 对比。正式矩阵比较 `r=4`、`r=8`、`r=16`；当前阶段仅允许运行 `--dry-run`，不得将链路验证或短跑结果作为正式结论。
+本协议用于复现 Tencent/YOLO-Master Issue #50 的 LoRA 高效微调 rank 对比。正式矩阵比较 `r=4`、`r=8`、`r=16`；诊断短跑不计入正式结果。
 
 训练入口为 `scripts/issue50/run_rank_sweep.py`，汇总入口为 `scripts/issue50/summarize_runs.py`。所有正式结果必须关联到唯一 Git commit 和对应的 `run_manifest.json`。
 
@@ -138,7 +138,7 @@ python scripts/issue50/run_rank_sweep.py --scene brain_tumor --ranks 4 --dry-run
 
 ## 当前状态判断
 
-正式实验基础设施、跨平台路径、日志和 manifest 记录机制已建立；尚无正式训练结果。正式结论必须等待云端首组验收和完整六组实验完成后再作出。
+六组 seed=0 正式对比均已稳定完成，退出码为 0，且具备 results、best/last 权重、完整日志与 manifest；未检测到 NaN、Inf 或 recovery。两个数据集的 args 审计确认除 rank、alpha、名称、保存路径及派生的 target-audit rank 字段外，其余场景内配置一致。
 
 ## 稳定性准入门
 
@@ -175,3 +175,18 @@ moe_router_lr_scale=0.5
 NaN/Inf/recovery 且验证指标不发生持续归零，才启动 r=8/16。
 
 该配置不得直接套用于 VisDrone；VisDrone 必须先完成独立稳定性验收。
+
+## VisDrone Stable V2
+
+VisDrone 独立诊断确认 `lora_lr_mult=0.1` 优于 Stable V1 的 0.5，并冻结：
+
+```text
+amp=False
+optimizer=AdamW
+lr0=0.001
+warmup_bias_lr=0.0
+lora_lr_mult=0.1
+moe_router_lr_scale=0.5
+```
+
+正式输出使用 `visdrone_r{rank}_stable_v2_seed0`。r=4/8/16 均稳定完成；r=4 的 mAP50/mAP50-95 最佳，为 0.05444/0.02878。

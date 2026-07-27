@@ -17,9 +17,9 @@
 - MoE 模型下 gradient checkpointing 被运行时跳过。
 - 前面的随机冻结实验只作为工程链路测试，不进入正式结果。
 
-## 下一步
+## 当前结论
 
-云端先使用官方预训练权重运行 Brain Tumor `r=4` 作为单组验收；验收通过后再运行剩余五组正式实验。
+六组正式 rank sweep 与两组最佳-rank seed 复验均已完成。稳定配置消除了 AMP adapter 非有限梯度与 recovery；两个数据集均由 `r=4` 获得 seed=0 最佳结果。
 
 ## 2026-07-27 云端诊断
 
@@ -48,12 +48,12 @@
 | `visdrone_r8_stable_v2_seed0` | 唯一变量 rank `4→8`，alpha=16 | 17/30 | 0.05286 | 0.02811 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 2；P=0.09106，R=0.09204，1563.7s，峰值 23.0GiB |
 | `visdrone_r16_stable_v2_seed0` | 唯一变量 rank `8→16`，alpha=32 | 17/30 | 0.05361 | 0.02862 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 2；P=0.09090，R=0.09340，1755.5s，峰值 23.0GiB |
 | `brain_tumor_r4_stable_v1_seed1` | Brain Tumor 最佳 rank 的 seed=1 复验 | 19/40 | 0.08852 | 0.04652 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 3；P=0.21622，R=0.09419，263.4s；较 seed=0 mAP50 低 22.5%，显示随机种子敏感性 |
-| `visdrone_r4_stable_v2_seed1` | VisDrone 最佳 rank 的 seed=1 复验 | 30 | pending | pending | queued | 与 r=4 seed=0 仅 seed 不同 |
+| `visdrone_r4_stable_v2_seed1` | VisDrone 最佳 rank 的 seed=1 复验 | 17/30 | 0.05774 | 0.02962 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 2；P=0.20071，R=0.09847，1981.0s；较 seed=0 mAP50 高 6.1% |
 
 ### 已定位的参数组
 
 - `pg0=weight`、`pg1=bn/no-decay`、`pg2=bias`、`pg3=router`、`pg4/pg5=adapter`。
-- router 使用 `moe_router_lr_scale=0.5`；adapter 基础倍率为 `lora_lr_mult=1.0`，其中 layer-wise decay 产生第二个 adapter 组。
+- 正式配置使用 `moe_router_lr_scale=0.5` 与 `lora_lr_mult=0.1`；layer-wise decay 产生第二个 adapter 组。
 - detection head 未单独分组，其 weight、normalization 和 bias 分别进入 `pg0`、`pg1`、`pg2`。
 
 ### 恢复机制结论
@@ -63,16 +63,16 @@
 - AMP loss/gradient 异常时恢复器关闭 AMP，并从健康 checkpoint 恢复 optimizer、scaler 和 EMA。
 - LoRA 在线模型恢复当前仅载入 adapter 张量；这是后续需要验证的恢复一致性风险。
 
-## 正式实验计划
+## 正式实验矩阵
 
 | Run | 场景 | Rank | Alpha | Epochs | Batch | ImgSz | Fraction | Seed | 输出目录 | 状态 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---|---|
-| brain_tumor_r4_seed0 | Brain Tumor | 4 | 8 | 40 | 16 | 640 | 1.0 | 0 | `runs/issue50/formal/brain_tumor_r4_seed0` | planned |
-| brain_tumor_r8_seed0 | Brain Tumor | 8 | 16 | 40 | 16 | 640 | 1.0 | 0 | `runs/issue50/formal/brain_tumor_r8_seed0` | planned |
-| brain_tumor_r16_seed0 | Brain Tumor | 16 | 32 | 40 | 16 | 640 | 1.0 | 0 | `runs/issue50/formal/brain_tumor_r16_seed0` | planned |
-| visdrone_r4_seed0 | VisDrone | 4 | 8 | 30 | 8 | 768 | 0.2 | 0 | `runs/issue50/formal/visdrone_r4_seed0` | planned |
-| visdrone_r8_seed0 | VisDrone | 8 | 16 | 30 | 8 | 768 | 0.2 | 0 | `runs/issue50/formal/visdrone_r8_seed0` | planned |
-| visdrone_r16_seed0 | VisDrone | 16 | 32 | 30 | 8 | 768 | 0.2 | 0 | `runs/issue50/formal/visdrone_r16_seed0` | planned |
+| brain_tumor_r4_stable_v1_seed0 | Brain Tumor | 4 | 8 | 40 | 16 | 640 | 1.0 | 0 | `runs/issue50/formal/brain_tumor_r4_stable_v1_seed0` | stable |
+| brain_tumor_r8_stable_v1_seed0 | Brain Tumor | 8 | 16 | 40 | 16 | 640 | 1.0 | 0 | `runs/issue50/formal/brain_tumor_r8_stable_v1_seed0` | stable |
+| brain_tumor_r16_stable_v1_seed0 | Brain Tumor | 16 | 32 | 40 | 16 | 640 | 1.0 | 0 | `runs/issue50/formal/brain_tumor_r16_stable_v1_seed0` | stable |
+| visdrone_r4_stable_v2_seed0 | VisDrone | 4 | 8 | 30 | 8 | 768 | 0.2 | 0 | `runs/issue50/formal/visdrone_r4_stable_v2_seed0` | stable |
+| visdrone_r8_stable_v2_seed0 | VisDrone | 8 | 16 | 30 | 8 | 768 | 0.2 | 0 | `runs/issue50/formal/visdrone_r8_stable_v2_seed0` | stable |
+| visdrone_r16_stable_v2_seed0 | VisDrone | 16 | 32 | 30 | 8 | 768 | 0.2 | 0 | `runs/issue50/formal/visdrone_r16_stable_v2_seed0` | stable |
 
 ### 正式脚本
 
@@ -94,4 +94,4 @@
 - 脚本使用 `pathlib` 从脚本位置动态定位仓库、权重、输出和日志目录，避免依赖 Windows 或 Linux 的写死绝对路径。
 - 每组正式运行将在日志目录写入 `run_manifest.json`，记录 Git 分支/commit/脏工作区状态、完整命令、运行环境、开始结束时间和退出状态；dry-run 仅打印预览，不生成 manifest。
 - 汇总脚本可在 manifest 存在时读取其 Git 与运行环境信息；旧实验缺少 manifest 时仍保持兼容。
-- 当前没有新增正式训练结果；表中的六组状态仍为 `planned`。
+- 六组正式结果均通过退出码、results、best/last 权重、日志、manifest 与非有限值门控；汇总见 `FORMAL_RESULTS_SUMMARY.csv`。
