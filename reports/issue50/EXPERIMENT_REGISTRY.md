@@ -32,7 +32,9 @@
 | `brain_tumor_r4_ampoff_lr3e4_e3` | FP32 基础 LR `0.001667→0.0003` | 3 | 0.02995 | 0.01676 | 无 recovery、loss 全部有限 | 稳定但新检测头学习偏慢 |
 | `brain_tumor_r4_ampoff_lr8e4_e3` | FP32 基础 LR `0.0003→0.0008` | 3 | 0.04977 | 0.02801 | 无 recovery、loss 全部有限 | 当前优先稳定候选 |
 | `brain_tumor_r4_ampoff_lr12e4_e3` | FP32 基础 LR `0.0008→0.0012` | 3 | 0.05319 | 0.02707 | 无 recovery；epoch 3 指标明显回落 | 峰值略高但波动较大 |
-| `brain_tumor_r4_ampoff_lr8e4_e10` | 将 `0.0008` 候选扩展到 10 epoch | 10 | pending | pending | planned | 稳定性确认 |
+| `brain_tumor_r4_ampoff_lr8e4_e10` | 将 `0.0008` 候选扩展到 10 epoch | 10 | 0.04410 | 0.02245 | 无 NaN/Inf/recovery；epoch 4 性能崩塌 | adapter 倍率 1.0 不稳定 |
+| `brain_tumor_r4_ampoff_lr8e4_adapt01_e10` | adapter multiplier `1.0→0.1` | 10 | 0.12106 | 0.06630 | 无 NaN/Inf/recovery | 最佳 epoch 8；稳定候选 |
+| `brain_tumor_r4_ampoff_lr8e4_adapt02_e10` | adapter multiplier `0.1→0.2` | 10 | 0.08742 | 0.04303 | 无 NaN/Inf/recovery | 最佳 epoch 4；明显弱于 0.1 |
 
 ### 已定位的参数组
 
