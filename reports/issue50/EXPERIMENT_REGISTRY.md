@@ -39,7 +39,7 @@
 | `brain_tumor_r4_stable_v1_seed0` | Stable V1 正式 r=4 | 23/40 | 0.11416 | 0.06395 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 8；P=0.39918，R=0.06107，325.1s，峰值 7.46GiB |
 | `brain_tumor_r8_stable_v1_seed0` | 唯一变量 rank `4→8`，alpha=16 | 19/40 | 0.11313 | 0.06180 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 4；P=0.43074，R=0.06191，271.5s，峰值 7.58GiB |
 | `brain_tumor_r16_stable_v1_seed0` | 唯一变量 rank `8→16`，alpha=32 | 33/40 | 0.09309 | 0.04821 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 18；P=0.01114，R=0.26982，454.1s，峰值 7.58GiB |
-| `visdrone_r4_preflight_e1` | 官方 YAML 下载与链路烟雾测试 | 1 | pending | pending | planned | 不进入正式结果 |
+| `visdrone_r4_preflight_e1` | 官方 YAML 下载与链路烟雾测试 | 1 | 0.00000 | 0.00000 | 稳定；退出码 0，产物完整 | 6471/548/1610 图像及同量标签通过；仅验证链路，不进入正式结果 |
 | `visdrone_r4/r8/r16_stable_v1_seed0` | VisDrone 固定配置 rank sweep | 30 | pending | pending | queued | 烟雾测试通过后依次运行 |
 
 ### 已定位的参数组
