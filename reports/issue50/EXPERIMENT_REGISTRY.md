@@ -42,7 +42,8 @@
 | `visdrone_r4_preflight_e1` | 官方 YAML 下载与链路烟雾测试 | 1 | 0.00000 | 0.00000 | 稳定；退出码 0，产物完整 | 6471/548/1610 图像及同量标签通过；仅验证链路，不进入正式结果 |
 | `visdrone_r4_stable_v1_seed0` | VisDrone Stable V1 正式 r=4 | 16/30 | 0.03887 | 0.02327 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 1；P=0.03610，R=0.15384，1496.7s，峰值 23.0GiB；后续退化并 EarlyStop |
 | `visdrone_r8_stable_v1_seed0` | 唯一变量 rank `4→8`，alpha=16 | 16/30 | 0.03887 | 0.02327 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 1；P=0.03610，R=0.15384，1563.6s，峰值 23.0GiB；与 r=4 最佳结果完全一致 |
-| `visdrone_r16_stable_v1_seed0` | 唯一变量 rank `8→16`，alpha=32 | 30 | pending | pending | running | 与 r=4/r=8 其余配置完全一致 |
+| `visdrone_r16_stable_v1_seed0` | 唯一变量 rank `8→16`，alpha=32 | 16/30 | 0.03887 | 0.02327 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 1；P=0.03610，R=0.15384，1739.9s，峰值 23.0GiB；与 r=4/r=8 最佳结果完全一致 |
+| `visdrone_r4_ampoff_lr1e3_adapt01_e10` | Adapter LR 倍率 `0.5→0.1` | 10 | pending | pending | queued | 验证能否阻止三个 rank 共同出现的 epoch-3 后性能漂移 |
 
 ### 已定位的参数组
 
