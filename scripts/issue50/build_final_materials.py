@@ -80,6 +80,14 @@ def finite_float(value: object, default: float = 0.0) -> float:
     return result if math.isfinite(result) else default
 
 
+def is_finite_number(value: object) -> bool:
+    """Return whether a serialized metric is numeric and finite."""
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
 def paths_for(root: Path, location: str, name: str) -> tuple[Path, Path, Path]:
     issue_root = root / "runs" / "issue50"
     if location == "formal":
@@ -154,7 +162,7 @@ def summarize_run(root: Path, spec: tuple) -> dict[str, object]:
     trainable, total, trainable_pct, adapter = parse_parameters(log_text, best_checkpoint, method)
     inference_ms, fps = parse_speed(log_text)
     numeric_results_finite = all(
-        math.isfinite(finite_float(value))
+        is_finite_number(value)
         for row in results
         for key, value in row.items()
         if key != "epoch" and str(value).strip()
