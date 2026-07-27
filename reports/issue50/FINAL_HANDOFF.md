@@ -39,7 +39,7 @@ python scripts/issue50/run_final_baselines.py --device 0
 python scripts/issue50/build_final_materials.py
 ```
 
-云端仓库为 `/root/autodl-tmp/YOLO-Master`，本地仓库为 `D:\桌面文件\LoRA\YOLO-Master`。最终 commit、push 状态、归档路径与 SHA256 在最终提交时补入本文件。
+云端仓库为 `/root/autodl-tmp/YOLO-Master`，本地仓库为 `D:\桌面文件\LoRA\YOLO-Master`。证据与图表 commit 为 `39b50e0d15a1938a8773c1a50fd3bbed44cf7e5e`。最终非敏感材料归档为 `/root/autodl-tmp/issue50_final_materials_20260727_182500.tar.gz`，SHA256 为 `4ad6d2c99642632a8e06fe3e85f79872db610b2096eb707f1ab7ade292528dac`；归档不包含数据集、模型权重、密钥或令牌。
 
 ## 结果边界
 
