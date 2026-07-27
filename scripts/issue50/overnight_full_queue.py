@@ -204,7 +204,7 @@ def smoke_visdrone(repo: Path, state: dict, state_path: Path) -> dict:
     (logs / "command.txt").write_text(" ".join(map(str, command)) + "\n", encoding="utf-8")
     state["status"] = "visdrone_preflight"
     return_code = launch(command, repo, log_path, state, state_path)
-    text = log_path.read_text(encoding="utf-8", errors="replace")
+    text = log_path.read_text(encoding="utf-8", errors="replace") if log_path.exists() else ""
     result = {
         "name": name,
         **metrics(run / "results.csv"),
