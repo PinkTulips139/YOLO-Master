@@ -99,3 +99,10 @@
 - **处理**：文件统一 UTF-8/LF；解析日志时去除 ANSI，只把原始 `train.log` 作为证据。
 - **状态**：显示层缓解，原始日志保留。
 
+## E14 后台正式脚本找不到 `yolo`
+
+- **错误**：`FileNotFoundError: No such file or directory: 'yolo'`。
+- **原因**：`nohup + setsid` 非登录环境的 PATH 不含 Conda CLI。
+- **修复**：归档失败 manifest/log/PID；重启时显式传入
+  `--launcher /root/miniconda3/bin/yolo`。
+

@@ -3,13 +3,14 @@
 ## 当前状态
 
 - 更新时间：2026-07-27 08:35（Asia/Shanghai）
-- 当前运行实验：准备 `brain_tumor_r4_stable_v1_seed0`
-- 当前 PID：正式脚本提交并同步后更新
+- 当前运行实验：`brain_tumor_r4_stable_v1_seed0` 启动失败后准备归档重试
+- 当前 PID：无 GPU 任务
 - 后台方式：`nohup + setsid`，无 TTY，与 SSH 会话解耦
 - GPU：RTX 4090 24GB；启动前空闲
 - Git 分支：`issue-50-lora-reproduction`
 - 本地 GitHub dry-run：成功，无需人工认证
 - push 状态：云端旧 commit 尚未推送；正在无损同步回本地主库后统一 push
+- 最新错误：后台 PATH 找不到 `yolo`；将显式使用 `/root/miniconda3/bin/yolo`
 
 ## 刚完成实验
 
