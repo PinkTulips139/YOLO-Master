@@ -579,6 +579,7 @@ def validate_and_commit(root: Path, reports: Path) -> tuple[str, str]:
         "reports/issue50/PHASE2_FINAL_HANDOFF.md",
     ]
     subprocess.run(["git", "add", "-f", *allowed], cwd=root, check=True)
+    subprocess.run(["git", "diff", "--cached", "--check"], cwd=root, check=True)
     staged = subprocess.check_output(["git", "diff", "--cached", "--name-only"], cwd=root, text=True).splitlines()
     forbidden = re.compile(
         r"(^|/)(datasets?|weights?|runs)(/|$)|(?:id_rsa|\.pem$|token|secret|password)", re.IGNORECASE
@@ -648,10 +649,21 @@ def completion_gate(reports: Path, archive: Path, digest: str) -> list[str]:
     for path in required:
         if not path.exists():
             errors.append(f"Missing required artifact: {path}")
-    if not digest or len(digest) != 64:
+    actual_digest = hashlib.sha256(archive.read_bytes()).hexdigest() if archive.exists() else ""
+    if not digest or len(digest) != 64 or actual_digest != digest:
         errors.append("Invalid SHA256 digest.")
-    if not list((reports / "PHASE2_FINAL_FIGURES").glob("*.png")):
-        errors.append("No final figures were generated.")
+    required_figures = {
+        "brain_tumor_methods_map.png",
+        "visdrone_methods_map.png",
+        "accuracy_vs_parameters.png",
+        "accuracy_vs_memory.png",
+        "accuracy_vs_time.png",
+        "amp_grouped_lr_ablation.png",
+        "multi_seed_error_bars.png",
+    }
+    present_figures = {path.name for path in (reports / "PHASE2_FINAL_FIGURES").glob("*.png")}
+    if missing_figures := required_figures - present_figures:
+        errors.append(f"Missing final figures: {sorted(missing_figures)}")
     return errors
 
 
