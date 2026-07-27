@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from functools import partial
+from types import MethodType
 
 import torch
 
@@ -81,6 +82,7 @@ class AdapterRuntimeController:
         validate_adapter_configuration(self.trainer.args)
         self._prepare_adalora_placeholder()
         self._apply_lora()
+        self._enable_amp_safe_lora()
         self._apply_molora()
         self._setup_few_shot_teacher()
 
@@ -134,6 +136,46 @@ class AdapterRuntimeController:
         self.trainer.model = apply_lora(self.trainer.model, args)
         update_args_with_lora_runtime_metadata(args, self.trainer.model)
 
+    def _enable_amp_safe_lora(self) -> None:
+        """Run PEFT LoRA branches in FP32 without disabling AMP for the ordinary base path."""
+        if not self.enabled or not bool(getattr(self.trainer.args, "lora_amp_safe", False)):
+            return
+        try:
+            from peft.tuners.lora.layer import Conv2d, Linear
+        except ImportError as exc:  # pragma: no cover - PEFT is optional
+            raise RuntimeError("lora_amp_safe=True requires the PEFT backend.") from exc
+
+        def amp_safe_forward(module, x, *args, **kwargs):
+            module._check_forward_args(x, *args, **kwargs)
+            adapter_names = kwargs.pop("adapter_names", None)
+            if adapter_names is not None or module.disable_adapters or module.merged:
+                return module._issue50_original_forward(x, *args, adapter_names=adapter_names, **kwargs)
+            result = module.base_layer(x, *args, **kwargs)
+            device_type = x.device.type
+            with torch.autocast(device_type=device_type, enabled=False):
+                safe_result = result.float()
+                for active_adapter in module.active_adapters:
+                    if active_adapter not in module.lora_A:
+                        continue
+                    if active_adapter in module.lora_variant:
+                        raise RuntimeError("lora_amp_safe currently supports standard LoRA/RS-LoRA only.")
+                    lora_a = module.lora_A[active_adapter]
+                    lora_b = module.lora_B[active_adapter]
+                    dropout = module.lora_dropout[active_adapter]
+                    adapter_input = x.float()
+                    safe_result = safe_result + lora_b(lora_a(dropout(adapter_input))) * module.scaling[active_adapter]
+            return safe_result
+
+        patched = 0
+        for module in self.model.modules():
+            if isinstance(module, (Linear, Conv2d)) and not hasattr(module, "_issue50_original_forward"):
+                module._issue50_original_forward = module.forward
+                module.forward = MethodType(amp_safe_forward, module)
+                patched += 1
+        if not patched:
+            raise RuntimeError("lora_amp_safe=True found no PEFT Linear/Conv2d modules to protect.")
+        LOGGER.info(f"[LoRA] AMP-safe FP32 adapter path enabled for {patched} PEFT modules.")
+
     def _apply_molora(self) -> None:
         if int(getattr(self.trainer.args, "molora_num_experts", 0) or 0) <= 0:
             return
@@ -164,8 +206,10 @@ class AdapterRuntimeController:
             return
         from ultralytics.utils.lora import resolve_adalora_total_step
 
-        requested = None if getattr(self, "_adalora_total_step_pending", False) else getattr(
-            self.trainer.args, "lora_total_step", None
+        requested = (
+            None
+            if getattr(self, "_adalora_total_step_pending", False)
+            else getattr(self.trainer.args, "lora_total_step", None)
         )
         total_step = resolve_adalora_total_step("adalora", requested, iterations)
         if total_step is None:
@@ -248,9 +292,7 @@ class AdapterRuntimeController:
             return loss
         from ultralytics.utils.lora import LoraTrainingStrategy
 
-        regularizer = LoraTrainingStrategy.compute_orthogonal_loss(
-            self.trainer.model, weight=self.ortho_weight
-        )
+        regularizer = LoraTrainingStrategy.compute_orthogonal_loss(self.trainer.model, weight=self.ortho_weight)
         regularizer = regularizer.to(device=loss.device, dtype=loss.dtype)
         if loss.ndim == 0:
             return loss + regularizer
@@ -297,11 +339,14 @@ class AdapterRuntimeController:
                     teacher, size=student.shape[2:], mode="bilinear", align_corners=False
                 )
             if student.shape[1] == teacher.shape[1]:
-                return torch.nn.functional.kl_div(
-                    torch.nn.functional.log_softmax(student / temperature, dim=1),
-                    torch.nn.functional.softmax(teacher / temperature, dim=1),
-                    reduction="batchmean",
-                ) * temperature**2
+                return (
+                    torch.nn.functional.kl_div(
+                        torch.nn.functional.log_softmax(student / temperature, dim=1),
+                        torch.nn.functional.softmax(teacher / temperature, dim=1),
+                        reduction="batchmean",
+                    )
+                    * temperature**2
+                )
         if student.ndim == teacher.ndim == 3 and student.shape[-1] == teacher.shape[-1]:
             length = min(student.shape[1], teacher.shape[1])
             return torch.nn.functional.mse_loss(student[:, :length], teacher[:, :length])
@@ -344,11 +389,15 @@ class AdapterRuntimeController:
         for index in layers:
             if hasattr(student, "model") and index < len(student.model):
                 cache["student_hooks"].append(
-                    student.model[index].register_forward_hook(partial(_hierarchical_hook, cache["student_features"], index))
+                    student.model[index].register_forward_hook(
+                        partial(_hierarchical_hook, cache["student_features"], index)
+                    )
                 )
             if teacher is not None and hasattr(teacher, "model") and index < len(teacher.model):
                 cache["teacher_hooks"].append(
-                    teacher.model[index].register_forward_hook(partial(_hierarchical_hook, cache["teacher_features"], index))
+                    teacher.model[index].register_forward_hook(
+                        partial(_hierarchical_hook, cache["teacher_features"], index)
+                    )
                 )
         self.trainer._hierarchical_cache = cache
         return cache

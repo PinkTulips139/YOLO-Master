@@ -1,0 +1,1 @@
+method,unique_variable,dataset,seed,batch,accumulate,configuration,precision,recall,mAP50,mAP50_95,trainable_params,peak_gpu_mem_gib,train_time_s,inference_ms_per_image,stability,conclusion,run_name

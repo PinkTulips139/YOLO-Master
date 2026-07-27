@@ -159,6 +159,8 @@ lora_planner_solver: "ao" # (str) Planner budget solver: ao, dco, mip
 lora_planner_backend: "legacy" # (str) Planner backend: legacy or vpeft (opt-in)
 lora_include_head: False # (bool) Include YOLO detection head layers in LoRA targeting
 lora_freeze_bn: False # (bool) Freeze BatchNorm layers during LoRA training
+lora_amp_safe: False # (bool) Keep PEFT LoRA branches and their outputs in FP32 while the base path may use AMP
+lora_unfreeze_layers: # (list[int], optional) Base-model layers to unfreeze alongside LoRA for partial hybrid tuning
 lora_target_modules: # (list[str], optional) LoRA target modules
 lora_save_adapters: True # (bool) Save LoRA adapters
 lora_adapter_dir: "lora_adapter" # (str) Directory name for adapters

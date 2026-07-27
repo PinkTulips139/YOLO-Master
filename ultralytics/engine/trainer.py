@@ -135,12 +135,7 @@ def _optimizer_state_family(state_dict) -> str | None:
     groups = state_dict.get("param_groups", ())
     if any("use_muon" in group for group in groups):
         return "musgd"
-    state_keys = {
-        key
-        for state in state_dict.get("state", {}).values()
-        if isinstance(state, dict)
-        for key in state
-    }
+    state_keys = {key for state in state_dict.get("state", {}).values() if isinstance(state, dict) for key in state}
     if {"exp_avg", "exp_avg_sq"} <= state_keys:
         return "adam"
     if "square_avg" in state_keys:
@@ -521,6 +516,25 @@ class BaseTrainer:
                     "See ultralytics.engine.trainer for customization of frozen layers."
                 )
                 parameter.requires_grad = True
+        if adapter_active:
+            requested = getattr(self.args, "lora_unfreeze_layers", None)
+            unfreeze_layers = [requested] if isinstance(requested, int) else list(requested or [])
+            if unfreeze_layers:
+                from ultralytics.utils.lora.api import _is_adapter_param
+
+                layer_names = [f"model.{int(index)}." for index in unfreeze_layers]
+                unfrozen = 0
+                for name, parameter in self.model.named_parameters():
+                    if (
+                        any(layer_name in name for layer_name in layer_names)
+                        and not _is_adapter_param(name)
+                        and parameter.dtype.is_floating_point
+                    ):
+                        parameter.requires_grad = True
+                        unfrozen += parameter.numel()
+                LOGGER.info(
+                    f"[LoRA] Hybrid partial tuning unfroze {unfrozen:,} base parameters in layers {unfreeze_layers}."
+                )
         if not any(parameter.requires_grad for parameter in self.model.parameters()):
             raise RuntimeError(
                 f"'freeze={self.args.freeze}' froze the entire model with no trainable parameters left. "
