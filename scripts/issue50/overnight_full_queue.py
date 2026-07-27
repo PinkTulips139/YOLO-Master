@@ -20,6 +20,8 @@ def now() -> str:
 
 
 def alive(pid: int) -> bool:
+    if pid <= 0:
+        return False
     stat = Path(f"/proc/{pid}/stat")
     try:
         if stat.exists() and stat.read_text(encoding="utf-8").split()[2] == "Z":
