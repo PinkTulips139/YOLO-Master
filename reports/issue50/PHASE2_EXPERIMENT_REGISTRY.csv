@@ -1,1 +1,27 @@
 method,unique_variable,dataset,seed,batch,accumulate,configuration,precision,recall,mAP50,mAP50_95,trainable_params,peak_gpu_mem_gib,train_time_s,inference_ms_per_image,stability,conclusion,run_name
+Head-only,train Detect only,Brain Tumor,0,16,4,imgsz=640; fraction=1,0.45906,0.86525,0.51525,0.36997,0,6.21,306.462,2.0,stable,formal candidate,phase2_brain_tumor_head_only_seed0
+Neck + Head,unfreeze layers 13-25,Brain Tumor,0,16,4,imgsz=640; fraction=1,0.42841,0.8249,0.48627,0.3477,0,6.47,278.315,1.8,stable,formal candidate,phase2_brain_tumor_neck_head_seed0
+Last stage + Neck + Head,unfreeze layers 10-25,Brain Tumor,0,16,4,imgsz=640; fraction=1,0.4666,0.77819,0.55688,0.40021,0,6.51,385.617,2.4,stable,formal candidate,phase2_brain_tumor_last_stage_neck_head_seed0
+Full fine-tuning,unfreeze all base parameters,Brain Tumor,0,16,4,imgsz=640; fraction=1,0.4426,0.83539,0.51586,0.37121,0,9.44,537.624,2.3,stable,formal candidate,phase2_brain_tumor_full_finetune_seed0
+Stable LoRA,Phase 1 stable LoRA,Brain Tumor,0,16,4,imgsz=640; fraction=1,0.39918,0.06107,0.11416,0.06395,409174,7.46,325.142,3.0,stable,formal candidate,phase2_brain_tumor_stable_lora_seed0
+Neck + Head + LoRA,unfreeze neck base layers alongside LoRA,Brain Tumor,0,16,4,imgsz=640; fraction=1,0.45995,0.74795,0.49727,0.35319,409174,7.47,486.725,2.5,stable,formal candidate,phase2_brain_tumor_partial_lora_seed0
+AMP-safe LoRA,AMP base path with FP32 LoRA path,Brain Tumor,0,16,4,imgsz=640; fraction=1,0.0,0.0,0.0,0.0,409174,0.0,0.0,0.0,failed,retained failure evidence,phase2_brain_tumor_amp_safe_lora_seed0
+Head-only,train Detect only,VisDrone,0,8,8,imgsz=768; fraction=0.2,0.23925,0.15415,0.09974,0.04994,2664106,23.0,407.396,0.0,oom,retained failure evidence,phase2_visdrone_head_only_seed0_b8
+Head-only,train Detect only,VisDrone,0,4,16,imgsz=768; fraction=0.2,0.23925,0.15415,0.09974,0.04994,2664106,23.0,407.396,0.0,oom,retained failure evidence,phase2_visdrone_head_only_seed0_b4
+Head-only,train Detect only,VisDrone,0,2,32,imgsz=768; fraction=0.2,0.23925,0.15415,0.09974,0.04994,2664106,23.0,407.396,0.0,oom,retained failure evidence,phase2_visdrone_head_only_seed0_b2
+Head-only,train Detect only,VisDrone,0,1,64,imgsz=768; fraction=0.2,0.23925,0.15415,0.09974,0.04994,2664106,23.0,407.396,0.0,oom,retained failure evidence,phase2_visdrone_head_only_seed0_b1
+Neck + Head,unfreeze layers 13-25,VisDrone,0,8,8,imgsz=768; fraction=0.2,0.27769,0.19034,0.13627,0.06536,2664106,23.0,196.172,0.0,oom,retained failure evidence,phase2_visdrone_neck_head_seed0_b8
+Neck + Head,unfreeze layers 13-25,VisDrone,0,4,16,imgsz=768; fraction=0.2,0.35764,0.28831,0.25819,0.14359,0,22.5,1705.06,6.4,stable,formal candidate,phase2_visdrone_neck_head_seed0_b4
+Last stage + Neck + Head,unfreeze layers 10-25,VisDrone,0,8,8,imgsz=768; fraction=0.2,0.21674,0.19025,0.12864,0.0638,2664106,23.0,423.683,0.0,oom,retained failure evidence,phase2_visdrone_last_stage_neck_head_seed0_b8
+Last stage + Neck + Head,unfreeze layers 10-25,VisDrone,0,4,16,imgsz=768; fraction=0.2,0.37922,0.29369,0.27054,0.14988,0,22.5,1745.97,5.4,stable,formal candidate,phase2_visdrone_last_stage_neck_head_seed0_b4
+Full fine-tuning,unfreeze all base parameters,VisDrone,0,8,8,imgsz=768; fraction=0.2,0.37563,0.28796,0.27186,0.15104,0,22.7,1997.55,1.7,stable,formal candidate,phase2_visdrone_full_finetune_seed0_b8
+Full fine-tuning,unfreeze all base parameters,VisDrone,0,4,16,imgsz=768; fraction=0.2,0.38332,0.29447,0.27708,0.15527,0,23.0,1912.46,5.6,stable,formal candidate,phase2_visdrone_full_finetune_seed0_b4
+Stable LoRA,Phase 1 stable LoRA,VisDrone,0,8,8,imgsz=768; fraction=0.2,0.09139,0.09525,0.05444,0.02878,410734,23.0,1502.15,13.7,stable,formal candidate,phase2_visdrone_stable_lora_seed0
+Neck + Head + LoRA,unfreeze neck base layers alongside LoRA,VisDrone,0,8,8,imgsz=768; fraction=0.2,0.28878,0.18068,0.15596,0.08565,410734,23.0,2776.67,25.6,stable,formal candidate,phase2_visdrone_partial_lora_seed0_b8
+AMP-safe LoRA,AMP base path with FP32 LoRA path,VisDrone,0,8,8,imgsz=768; fraction=0.2,0.0,0.0,0.0,0.0,410734,0.0,0.0,0.0,failed,retained failure evidence,phase2_visdrone_amp_safe_lora_seed0_b8
+Last stage + Neck + Head,multi-seed confirmation,Brain Tumor,1,16,4,imgsz=640; fraction=1,0.41243,0.77071,0.51024,0.36552,0,6.51,475.534,1.8,stable,formal candidate,phase2_brain_tumor_last_stage_neck_head_seed1
+Last stage + Neck + Head,multi-seed confirmation,Brain Tumor,2,16,4,imgsz=640; fraction=1,0.4517,0.81704,0.56568,0.40944,0,6.52,453.146,2.9,stable,formal candidate,phase2_brain_tumor_last_stage_neck_head_seed2
+Full fine-tuning,multi-seed confirmation,VisDrone,1,8,8,imgsz=768; fraction=0.2,0.36396,0.30177,0.27866,0.15486,0,23.0,1846.65,16.1,stable,formal candidate,phase2_visdrone_full_finetune_seed1_b8
+Full fine-tuning,multi-seed confirmation,VisDrone,1,4,16,imgsz=768; fraction=0.2,0.37778,0.30202,0.2773,0.15401,0,23.0,1886.18,4.9,stable,formal candidate,phase2_visdrone_full_finetune_seed1_b4
+Full fine-tuning,multi-seed confirmation,VisDrone,2,8,8,imgsz=768; fraction=0.2,0.39282,0.29252,0.27648,0.15448,0,23.0,2052.02,1.8,stable,formal candidate,phase2_visdrone_full_finetune_seed2_b8
+Full fine-tuning,multi-seed confirmation,VisDrone,2,4,16,imgsz=768; fraction=0.2,0.38523,0.29506,0.27211,0.15097,0,23.0,1892.95,5.3,stable,formal candidate,phase2_visdrone_full_finetune_seed2_b4
