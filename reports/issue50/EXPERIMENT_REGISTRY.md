@@ -45,7 +45,8 @@
 | `visdrone_r16_stable_v1_seed0` | 唯一变量 rank `8→16`，alpha=32 | 16/30 | 0.03887 | 0.02327 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 1；P=0.03610，R=0.15384，1739.9s，峰值 23.0GiB；与 r=4/r=8 最佳结果完全一致 |
 | `visdrone_r4_ampoff_lr1e3_adapt01_e10` | Adapter LR 倍率 `0.5→0.1` | 10 | 0.05549 | 0.02851 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 2；P=0.09403，R=0.09375，664.9s，峰值 23.0GiB；较 V1 最佳 mAP50 +42.8% |
 | `visdrone_r4_stable_v2_seed0` | Adapter LR 倍率 `0.5→0.1` 的严格 30 epoch 单变量正式验证 | 17/30 | 0.05444 | 0.02878 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 2；P=0.09139，R=0.09525，1502.2s，峰值 23.0GiB；较 V1 mAP50 +40.1% |
-| `visdrone_r8/r16_stable_v2_seed0` | 固定 Adapter 倍率 0.1 的正式 rank sweep | 30 | pending | pending | running/queued | 除 rank 与 alpha 外保持一致；V1 完整保留 |
+| `visdrone_r8_stable_v2_seed0` | 唯一变量 rank `4→8`，alpha=16 | 17/30 | 0.05286 | 0.02811 | 稳定；无 NaN/Inf/recovery | 最佳 epoch 2；P=0.09106，R=0.09204，1563.7s，峰值 23.0GiB |
+| `visdrone_r16_stable_v2_seed0` | 唯一变量 rank `8→16`，alpha=32 | 30 | pending | pending | running | 除 rank 与 alpha 外保持一致；V1 完整保留 |
 
 ### 已定位的参数组
 
