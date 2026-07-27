@@ -207,6 +207,9 @@ results.csv
 # CI test asset cache
 .ultralytics_cache/
 
+# Local verified dataset transfer cache (never commit datasets)
+.codex-downloads/
+
 # RepoWiki source-only publishing (exclude generator metadata)
 wiki/repowiki/knowledge/
 wiki/repowiki/*/meta/repowiki-metadata.json
