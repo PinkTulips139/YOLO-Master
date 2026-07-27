@@ -108,7 +108,7 @@ def paths_for(root: Path, location: str, name: str) -> tuple[Path, Path, Path]:
 
 def baseline_parameter_counts(checkpoint: Path, method: str) -> tuple[int, int]:
     checkpoint_data = torch.load(checkpoint, map_location="cpu", weights_only=False)
-    model = checkpoint_data["model"]
+    model = checkpoint_data.get("model") or checkpoint_data.get("ema")
     named = list(model.named_parameters())
     total = sum(parameter.numel() for _, parameter in named)
     if method == "Head-only":
