@@ -18,7 +18,7 @@ import shlex
 import subprocess
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable
@@ -325,6 +325,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scene", choices=[*SCENES.keys(), "all"], default="all")
     parser.add_argument("--ranks", nargs="+", type=int, default=list(RANKS))
+    parser.add_argument("--seed", type=int, help="Override the frozen scene seed for a reproducibility recheck.")
     parser.add_argument("--device", default="0")
     parser.add_argument("--launcher", default="yolo")
     parser.add_argument("--allow-existing", action="store_true")
@@ -340,6 +341,8 @@ def main() -> None:
     commands: list[tuple[str, int, list[str], str, Path]] = []
 
     for scene, spec in selected_scenes(args.scene):
+        if args.seed is not None:
+            spec = replace(spec, seed=args.seed)
         for rank in ranks:
             cmd, run_name = build_train_command(
                 launcher=args.launcher,
