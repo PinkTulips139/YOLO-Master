@@ -35,6 +35,8 @@
 | `brain_tumor_r4_ampoff_lr8e4_e10` | 将 `0.0008` 候选扩展到 10 epoch | 10 | 0.04410 | 0.02245 | 无 NaN/Inf/recovery；epoch 4 性能崩塌 | adapter 倍率 1.0 不稳定 |
 | `brain_tumor_r4_ampoff_lr8e4_adapt01_e10` | adapter multiplier `1.0→0.1` | 10 | 0.12106 | 0.06630 | 无 NaN/Inf/recovery | 最佳 epoch 8；稳定候选 |
 | `brain_tumor_r4_ampoff_lr8e4_adapt02_e10` | adapter multiplier `0.1→0.2` | 10 | 0.08742 | 0.04303 | 无 NaN/Inf/recovery | 最佳 epoch 4；明显弱于 0.1 |
+| `brain_tumor_r4_ampoff_lr8e4_adapt01_router025_e10` | router LR scale `0.5→0.25` | 10 | 0.12106 | 0.06630 | 无 NaN/Inf/recovery | 与 0.5 逐轮一致；停止 router sweep |
+| `brain_tumor_r4_stable_v1_seed0` | Stable V1 正式 r=4 验收 | 40 | pending | pending | planned | 通过后才启动 r=8/16 |
 
 ### 已定位的参数组
 

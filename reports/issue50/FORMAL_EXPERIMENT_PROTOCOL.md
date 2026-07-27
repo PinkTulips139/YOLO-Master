@@ -156,3 +156,22 @@ python scripts/issue50/run_rank_sweep.py --scene brain_tumor --ranks 4 --dry-run
 2. 在稳定 FP32 链路上单独降低基础 LR。
 3. 如仍需调整，依次测试中间 LR、adapter LR multiplier 或 detection-head 专用 LR；每次只改变一项。
 4. 稳定候选先完成 Brain Tumor `r=4`，再固定全部非 rank 条件运行 `r=8/16`。
+
+## Brain Tumor Stable V1
+
+10-epoch 单变量诊断确定以下正式配置：
+
+```text
+amp=False
+optimizer=AdamW
+lr0=0.0008
+warmup_bias_lr=0.0
+lora_lr_mult=0.1
+moe_router_lr_scale=0.5
+```
+
+正式输出使用 `brain_tumor_r{rank}_stable_v1_seed0`，保留旧的
+`brain_tumor_r4_seed0` 不稳定产物。先完成 40 轮 r=4 验收；只有无
+NaN/Inf/recovery 且验证指标不发生持续归零，才启动 r=8/16。
+
+该配置不得直接套用于 VisDrone；VisDrone 必须先完成独立稳定性验收。

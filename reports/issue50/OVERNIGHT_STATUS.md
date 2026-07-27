@@ -3,8 +3,8 @@
 ## 当前状态
 
 - 更新时间：2026-07-27 08:35（Asia/Shanghai）
-- 当前运行实验：准备 `brain_tumor_r4_ampoff_lr8e4_adapt01_router025_e10`
-- 当前 PID：待启动后更新
+- 当前运行实验：准备 `brain_tumor_r4_stable_v1_seed0`
+- 当前 PID：正式脚本提交并同步后更新
 - 后台方式：`nohup + setsid`，无 TTY，与 SSH 会话解耦
 - GPU：RTX 4090 24GB；启动前空闲
 - Git 分支：`issue-50-lora-reproduction`
@@ -37,9 +37,9 @@
 
 ## 下一组实验依据
 
-保持 `amp=False, AdamW, lr0=8e-4, lora_lr_mult=0.1`，只把
-`moe_router_lr_scale=0.5→0.25`。假设是小数据集上降低 router 漂移可能进一步改善验证稳定性；
-若无提升，保留默认 0.5，不再扩展 router sweep。
+router scale 0.25 与 0.5 的结果逐轮完全一致，停止 router sweep。下一步使用
+`amp=False, AdamW, lr0=8e-4, warmup_bias_lr=0, lora_lr_mult=0.1,
+moe_router_lr_scale=0.5` 启动 40 轮 Stable V1 正式 r=4 验收。
 
 ## 醒来后首先查看
 
@@ -47,4 +47,3 @@
 2. `EXPERIMENT_REGISTRY.md` 中是否已通过正式准入门。
 3. Brain Tumor 正式 r=4 是否已启动或完成。
 4. GitHub 当前分支是否已 push。
-

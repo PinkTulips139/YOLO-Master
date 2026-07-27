@@ -36,6 +36,8 @@ class SceneSpec:
     fraction: float
     seed: int
     workers: int
+    run_suffix: str
+    extra_args: tuple[str, ...]
 
 
 SCENES: dict[str, SceneSpec] = {
@@ -47,6 +49,15 @@ SCENES: dict[str, SceneSpec] = {
         fraction=1.0,
         seed=0,
         workers=4,
+        run_suffix="_stable_v1",
+        extra_args=(
+            "amp=False",
+            "optimizer=AdamW",
+            "lr0=0.0008",
+            "warmup_bias_lr=0.0",
+            "lora_lr_mult=0.1",
+            "moe_router_lr_scale=0.5",
+        ),
     ),
     "visdrone": SceneSpec(
         cfg="examples/lora_examples/yolo_master_visdrone_lora.yaml",
@@ -56,6 +67,8 @@ SCENES: dict[str, SceneSpec] = {
         fraction=0.2,
         seed=0,
         workers=8,
+        run_suffix="",
+        extra_args=(),
     ),
 }
 
@@ -193,7 +206,7 @@ def build_train_command(
     cfg_path: Path,
     device: str,
 ) -> tuple[list[str], str]:
-    run_name = f"{scene}_r{rank}_seed{spec.seed}"
+    run_name = f"{scene}_r{rank}{spec.run_suffix}_seed{spec.seed}"
     alpha = rank * 2
     cmd = [
         launcher,
@@ -216,6 +229,7 @@ def build_train_command(
         f"seed={spec.seed}",
         f"workers={spec.workers}",
         f"device={device}",
+        *spec.extra_args,
         f"project={project}",
         f"name={run_name}",
     ]
