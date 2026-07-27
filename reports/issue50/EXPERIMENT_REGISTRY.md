@@ -95,3 +95,12 @@
 - 每组正式运行将在日志目录写入 `run_manifest.json`，记录 Git 分支/commit/脏工作区状态、完整命令、运行环境、开始结束时间和退出状态；dry-run 仅打印预览，不生成 manifest。
 - 汇总脚本可在 manifest 存在时读取其 Git 与运行环境信息；旧实验缺少 manifest 时仍保持兼容。
 - 六组正式结果均通过退出码、results、best/last 权重、日志、manifest 与非有限值门控；汇总见 `FORMAL_RESULTS_SUMMARY.csv`。
+
+## 2026-07-27 最终基线与闭环
+
+| 实验 | 目的/唯一变量 | 关键配置 | 最佳 P/R/mAP50/mAP50-95 | 耗时/显存 | 稳定性 | 结论 |
+|---|---|---|---|---|---|---|
+| `brain_tumor_head_only_seed0` | 无 LoRA，仅训练检测头 | 匹配 Stable V1；`lora_r=0, freeze=25` | 0.45906/0.86525/0.51525/0.36997 | 306.5s/6.21GiB | stable | 小数据集最优参数效率基线 |
+| `brain_tumor_full_finetune_seed0` | 全量微调 | 匹配 Stable V1；`lora_r=0` | 0.44260/0.83539/0.51586/0.37121 | 537.6s/9.44GiB | stable | 精度仅略高于 head-only，成本显著更高 |
+| `visdrone_head_only_seed0` | 匹配协议 head-only | `batch=8, imgsz=768, fraction=0.2` | 部分运行 0.23925/0.15415/0.09974/0.04994 | 407.4s/23.0GiB | failed：CUDA OOM，exit=1 | 仅失败证据，不进入正式比较 |
+| `visdrone_full_finetune_seed0` | 匹配协议全量微调 | 预计高于 head-only 显存 | 未启动 | — | not run | 遵守失败/公平性门控，不降低 batch 拼凑结果 |

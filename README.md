@@ -296,6 +296,17 @@ To verify the performance and resource consumption of the `YOLO-Master LoRA` fra
 2. **Dense/Complex Scenarios (e.g., VisDrone)**: **Rank >= 16** is recommended. Complex backgrounds and high-density tiny objects require larger parameter capacities for representation. Increasing the Rank significantly improves mAP50 by **+25.4%** (with <0.1 GB VRAM overhead).
    *  *Pitfall:* Aerial imagery suffers from extreme scale variations. It is strictly advised to enable the built-in **Sparse SAHI (Sparse Inference)** or set `rect: true` during training. Furthermore, include both the Backbone's dimensionality reduction layers and MoE Experts' MLPs in `lora_target_modules` to provide sufficient degrees of freedom for spatial local features.
 
+#### Issue #50 stability reproduction (RTX 4090)
+
+An independent, artifact-gated reproduction evaluated Brain Tumor and VisDrone at ranks 4/8/16. It identified AMP non-finite gradients in the Adapter before the loss became non-finite. The verified stable protocol uses FP32 training and an Adapter learning-rate multiplier of 0.1; all six rank runs and both best-rank seed replications completed without NaN, Inf, or recovery.
+
+| Dataset | Best stable rank | mAP50 | mAP50-95 | Trainable params | Peak VRAM |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Brain Tumor | 4 | 0.1142 | 0.0640 | 409,174 | 7.46 GiB |
+| VisDrone | 4 | 0.0544 | 0.0288 | 410,734 | 23.00 GiB |
+
+These numbers use a different checkpoint, protocol, hardware, and VisDrone fraction from the matrix above and must not be compared as if they were the same benchmark. A matched Brain Tumor head-only baseline reached 0.3700 mAP50-95, showing that stable LoRA is not automatically the most accurate choice when the detection head is reinitialized on a small dataset. See the [complete Chinese report](reports/issue50/FINAL_PROJECT_REPORT_CN.md), [result table](reports/issue50/FINAL_RESULTS_SUMMARY.csv), and [handoff](reports/issue50/FINAL_HANDOFF.md).
+
 ### 3️⃣ Sparse SAHI Mode
 
 **Sparse Slicing Aided Hyper-Inference** — a revolutionary optimization for ultra-large image (4K/8K) detection, achieving **3-5x speedup** by intelligently skipping blank regions.

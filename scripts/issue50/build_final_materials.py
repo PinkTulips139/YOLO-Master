@@ -172,7 +172,11 @@ def summarize_run(root: Path, spec: tuple) -> dict[str, object]:
     if category in {"rank", "seed", "baseline"}:
         required.append(manifest_path)
     artifacts_complete = all(path.exists() for path in required)
-    success = manifest.get("success") is True if manifest else bool(results and best_checkpoint.exists())
+    success = (
+        artifacts_complete
+        if category == "ablation"
+        else (manifest.get("success") is True if manifest else bool(results and best_checkpoint.exists()))
+    )
     stability = "unstable" if nonfinite else ("stable" if success and artifacts_complete else "incomplete")
     return {
         "category": category,
