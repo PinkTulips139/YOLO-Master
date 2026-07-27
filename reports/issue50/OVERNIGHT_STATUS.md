@@ -11,6 +11,9 @@
 - 本地 GitHub dry-run：成功，无需人工认证
 - push 状态：云端旧 commit 尚未推送；正在无损同步回本地主库后统一 push
 - 最新错误：后台 PATH 找不到 `yolo`；将显式使用 `/root/miniconda3/bin/yolo`
+- 完整队列：Brain Tumor r=4/8/16 → VisDrone 官方数据 smoke → VisDrone r=4/8/16
+- VisDrone 预检：YAML/权重存在、10 类、磁盘剩余约 50GB；数据尚未下载，队列仅尝试官方 YAML 下载一次。
+- 原子交接：完整队列等待当前 r=8 结束，再停止旧队列 PID 17435，并通过 flock 单锁续跑。
 
 ## 刚完成实验
 

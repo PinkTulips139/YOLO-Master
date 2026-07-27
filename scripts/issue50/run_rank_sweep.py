@@ -67,8 +67,15 @@ SCENES: dict[str, SceneSpec] = {
         fraction=0.2,
         seed=0,
         workers=8,
-        run_suffix="",
-        extra_args=(),
+        run_suffix="_stable_v1",
+        extra_args=(
+            "amp=False",
+            "optimizer=AdamW",
+            "lr0=0.001",
+            "warmup_bias_lr=0.0",
+            "lora_lr_mult=0.5",
+            "moe_router_lr_scale=0.5",
+        ),
     ),
 }
 
