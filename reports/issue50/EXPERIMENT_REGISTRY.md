@@ -21,6 +21,32 @@
 
 云端先使用官方预训练权重运行 Brain Tumor `r=4` 作为单组验收；验收通过后再运行剩余五组正式实验。
 
+## 2026-07-27 云端诊断
+
+| Run | 单变量 | Epochs | 最佳 mAP50 | 最佳 mAP50-95 | 稳定性 | 结论 |
+|---|---|---:|---:|---:|---|---|
+| `brain_tumor_r4_seed0` | 正式链路基线 | 17/40 | 0.13520 | 0.06378 | epoch 1 step 0 AMP adapter 梯度非有限并恢复；epoch 4 起指标归零 | 不作为稳定正式结果 |
+| `brain_tumor_r4_lr3e4` | 原始低 LR 诊断 | 10 | 0.05275 | 0.02593 | 未保存完整日志；bias warmup LR 首轮达 0.0804161 | 存在 warmup 混杂，不能归因于 `lr0` |
+| `brain_tumor_r4_ampoff_e3` | `amp=False` | 3 | 0.05718 | 0.03007 | 无 recovery、loss 全部有限 | FP32 消除首次数值异常，但 3 轮性能不足 |
+| `brain_tumor_r4_amp_probe_e1` | 仅增加非有限梯度观测 | 1 | 0.04418 | 0.02424 | 首次异常为 epoch 1 step 0 的 `model.4.conv.lora_A` adapter 梯度 | AMP adapter 梯度溢出可确定性复现 |
+| `brain_tumor_r4_ampoff_lr3e4_e3` | FP32 基础 LR `0.001667→0.0003` | 3 | 0.02995 | 0.01676 | 无 recovery、loss 全部有限 | 稳定但新检测头学习偏慢 |
+| `brain_tumor_r4_ampoff_lr8e4_e3` | FP32 基础 LR `0.0003→0.0008` | 3 | 0.04977 | 0.02801 | 无 recovery、loss 全部有限 | 当前优先稳定候选 |
+| `brain_tumor_r4_ampoff_lr12e4_e3` | FP32 基础 LR `0.0008→0.0012` | 3 | 0.05319 | 0.02707 | 无 recovery；epoch 3 指标明显回落 | 峰值略高但波动较大 |
+| `brain_tumor_r4_ampoff_lr8e4_e10` | 将 `0.0008` 候选扩展到 10 epoch | 10 | pending | pending | planned | 稳定性确认 |
+
+### 已定位的参数组
+
+- `pg0=weight`、`pg1=bn/no-decay`、`pg2=bias`、`pg3=router`、`pg4/pg5=adapter`。
+- router 使用 `moe_router_lr_scale=0.5`；adapter 基础倍率为 `lora_lr_mult=1.0`，其中 layer-wise decay 产生第二个 adapter 组。
+- detection head 未单独分组，其 weight、normalization 和 bias 分别进入 `pg0`、`pg1`、`pg2`。
+
+### 恢复机制结论
+
+- `last_healthy.pt` 在训练开始前建立可执行的完整在线快照，接受的有限 epoch 后原子刷新。
+- 非有限 loss、fitness、gradient 或 EMA 任一标志都会触发恢复；最多连续恢复 3 次。
+- AMP loss/gradient 异常时恢复器关闭 AMP，并从健康 checkpoint 恢复 optimizer、scaler 和 EMA。
+- LoRA 在线模型恢复当前仅载入 adapter 张量；这是后续需要验证的恢复一致性风险。
+
 ## 正式实验计划
 
 | Run | 场景 | Rank | Alpha | Epochs | Batch | ImgSz | Fraction | Seed | 输出目录 | 状态 |

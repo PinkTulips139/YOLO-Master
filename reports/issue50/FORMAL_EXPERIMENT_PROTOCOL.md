@@ -139,3 +139,20 @@ python scripts/issue50/run_rank_sweep.py --scene brain_tumor --ranks 4 --dry-run
 ## 当前状态判断
 
 正式实验基础设施、跨平台路径、日志和 manifest 记录机制已建立；尚无正式训练结果。正式结论必须等待云端首组验收和完整六组实验完成后再作出。
+
+## 稳定性准入门
+
+在启动 `r=8`、`r=16` 或 VisDrone 正式矩阵前，候选配置必须先通过 Brain Tumor `r=4`：
+
+- 至少 3 epoch 无 loss、gradient、parameter、EMA 非有限事件；
+- 不触发 NaN recovery，`last_healthy.pt` 可读取且 model/EMA/optimizer/scaler 均有限；
+- detection head、router、adapter 的有效 LR 与 warmup 轨迹已记录；
+- 验证指标不得连续归零，验证 loss 不得出现持续爆炸；
+- 相邻诊断一次只改变一个有效优化变量。
+
+当前诊断顺序：
+
+1. 正式配置仅关闭 AMP，确认首次非有限事件是否消失。
+2. 在稳定 FP32 链路上单独降低基础 LR。
+3. 如仍需调整，依次测试中间 LR、adapter LR multiplier 或 detection-head 专用 LR；每次只改变一项。
+4. 稳定候选先完成 Brain Tumor `r=4`，再固定全部非 rank 条件运行 `r=8/16`。
