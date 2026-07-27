@@ -18,12 +18,12 @@ except ImportError as exc:  # pragma: no cover - user-facing dependency check
 
 
 EXPECTED_RUNS = [
-    ("brain_tumor", 4),
-    ("brain_tumor", 8),
-    ("brain_tumor", 16),
-    ("visdrone", 4),
-    ("visdrone", 8),
-    ("visdrone", 16),
+    ("brain_tumor", 4, "brain_tumor_r4_stable_v1_seed0"),
+    ("brain_tumor", 8, "brain_tumor_r8_stable_v1_seed0"),
+    ("brain_tumor", 16, "brain_tumor_r16_stable_v1_seed0"),
+    ("visdrone", 4, "visdrone_r4_stable_v2_seed0"),
+    ("visdrone", 8, "visdrone_r8_stable_v2_seed0"),
+    ("visdrone", 16, "visdrone_r16_stable_v2_seed0"),
 ]
 
 
@@ -242,8 +242,7 @@ def infer_status(
     return "created_no_results"
 
 
-def summarize_one(project: Path, log_dir: Path, scene: str, rank: int) -> dict[str, str]:
-    run_name = f"{scene}_r{rank}_seed0"
+def summarize_one(project: Path, log_dir: Path, scene: str, rank: int, run_name: str) -> dict[str, str]:
     run_dir = project / run_name
     log_path = log_dir / f"{run_name}.log"
     manifest_file = log_dir / run_name / "run_manifest.json"
@@ -315,7 +314,7 @@ def main() -> None:
     reports_root = (root / "reports" / "issue50").resolve()
     output = reports_root / "FORMAL_RESULTS_SUMMARY.csv"
 
-    rows = [summarize_one(formal_root, logs_root, scene, rank) for scene, rank in EXPECTED_RUNS]
+    rows = [summarize_one(formal_root, logs_root, scene, rank, run_name) for scene, rank, run_name in EXPECTED_RUNS]
     write_summary(rows, output)
     print(f"Wrote {len(rows)} rows to {output}")
 
